@@ -33,12 +33,9 @@ class LightRoomApi:
         else:
             return json.loads(result)
 
-    def __api_key_headers__(self):
-        return {'X-API-Key': self.api_key}
-
     def __authed_headers__(self):
         return {
-            **self.__api_key_headers__(),
+            'X-API-Key': self.api_key,
             'Authorization': 'Bearer ' + self.token
         }
 
@@ -66,25 +63,45 @@ class LightRoomApi:
         return mime
 
     #
+    # Abstractions over http requests
+    #
+
+    def _get(self, path, params=None, **kwargs):
+        headers = {
+            **kwargs.pop('headers', {}),
+            **self.__authed_headers__()
+        }
+        kwargs['headers'] = headers
+        return self.__process_response__(requests.get(url=self.base + path, params=params, **kwargs))
+
+    def _put(self, path, data=None, **kwargs):
+        headers = {
+            **kwargs.pop('headers', {}),
+            **self.__authed_headers__()
+        }
+        kwargs['headers'] = headers
+        return self.__process_response__(requests.put(url=self.base + path, data=data, **kwargs))
+
+    #
     # Health
     #
 
     def health(self):
-        return self.__process_response__(requests.get(self.base + 'health', headers=self.__api_key_headers__()))
+        return self._get('health')
 
     #
     # Accounts
     #
 
     def account(self):
-        return self.__process_response__(requests.get(self.base + 'account', headers=self.__authed_headers__()))
+        return self._get('account')
 
     #
     # Catalog
     #
 
     def catalog(self):
-        return self.__process_response__(requests.get(self.base + 'catalog', headers=self.__authed_headers__()))
+        return self._get('catalog')
 
     #
     # Assets
@@ -94,38 +111,26 @@ class LightRoomApi:
     # def post_renditions()
 
     def put_revision(self, catalog_id, asset_id, revision_id, body, sha256=None):
-        headers = {
-            **self.__authed_headers__(),
-            **self.__json_header__()
-        }
+        headers = self.__json_header__()
         if sha256:
             headers['If-None-Match'] = sha256
 
-        return self.__process_response__(requests.put(
-            url=self.base +
-            f'catalogs/{catalog_id}/assets/{asset_id}/revisions/{revision_id}',
+        return self._put(
+            path=f'catalogs/{catalog_id}/assets/{asset_id}/revisions/{revision_id}',
             data=json.dumps(body),
             headers=headers
-        ))
+        )
 
     def put_master(self, catalog_id, asset_id, revision_id, data, content_type):
-        headers = {
-            **self.__authed_headers__(),
-            'Content-Type': content_type
-        }
-        return self.__process_response__(requests.put(
-            url=self.base +
-            f'catalogs/{catalog_id}/assets/{asset_id}/revisions/{revision_id}/master',
+        headers = {'Content-Type': content_type}
+        return self._put(
+            path=f'catalogs/{catalog_id}/assets/{asset_id}/revisions/{revision_id}/master',
             data=data,
             headers=headers
-        ))
+        )
 
     def renditions(self, catalog_id, asset_id, rendition_type):
-        return self.__process_response__(requests.get(
-            self.base +
-            f'catalogs/{catalog_id}/assets{asset_id}/renditions/{rendition_type}',
-            headers=self.__authed_headers__()
-        ))
+        return self._get(f'catalogs/{catalog_id}/assets{asset_id}/renditions/{rendition_type}')
 
     def assets(self, catalog_id, **kwargs):
         if 'next' in kwargs:
@@ -133,55 +138,35 @@ class LightRoomApi:
         else:
             href = f'catalogs/{catalog_id}/assets'
 
-        return self.__process_response__(requests.get(
-            self.base + href,
-            headers=self.__authed_headers__(),
-            params=kwargs
-        ))
+        return self._get(href, params=kwargs)
 
     def asset(self, catalog_id, asset_id):
-        return self.__process_response__(requests.get(
-            self.base + f'catalogs/{catalog_id}/assets/{asset_id}',
-            headers=self.__authed_headers__()
-        ))
+        return self._get(f'catalogs/{catalog_id}/assets/{asset_id}')
 
     #
     # Albums
     #
 
     def put_album(self, catalog_id, album_id, body):
-        return self.__process_response__(requests.put(
-            url=self.base + f'catalogs/{catalog_id}/albums/{album_id}',
-            data=json.dumps(body),
-            headers=self.__authed_headers__()
-        ))
+        return self._put(
+            path=f'catalogs/{catalog_id}/albums/{album_id}',
+            data=json.dumps(body)
+        )
 
     def album(self, catalog_id, album_id):
-        return self.__process_response__(requests.get(
-            self.base + f'catalogs/{catalog_id}/albums/{album_id}',
-            headers=self.__authed_headers__()
-        ))
+        return self._get(f'catalogs/{catalog_id}/albums/{album_id}')
 
     def albums(self, catalog_id, **kwargs):
-        return self.__process_response__(requests.get(
-            self.base + f'catalogs/{catalog_id}/albums',
-            headers=self.__authed_headers__(),
-            params=kwargs
-        ))
+        return self._get(f'catalogs/{catalog_id}/albums', params=kwargs)
 
     def put_asset_to_album(self, catalog_id, album_id, body):
-        return self.__process_response__(requests.put(
-            url=self.base + f'catalogs/{catalog_id}/albums/{album_id}/assets',
-            data=json.dumps(body),
-            headers=self.__authed_headers__()
-        ))
+        return self._put(
+            path=f'catalogs/{catalog_id}/albums/{album_id}/assets',
+            data=json.dumps(body)
+        )
 
     def list_assets(self, catalog_id, album_id, **kwargs):
-        return self.__process_response__(requests.get(
-            url=self.base + f'catalogs/{catalog_id}/albums/{album_id}/assets',
-            headers=self.__authed_headers__(),
-            params=kwargs
-        ))
+        return self._get(f'catalogs/{catalog_id}/albums/{album_id}/assets', params=kwargs)
 
     #
     # higher level helpers
