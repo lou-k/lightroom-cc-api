@@ -15,7 +15,11 @@ See the Lightroom's [getting started](https://www.adobe.io/apis/creativecloud/li
 
 ## Installation
 
-`requirements.txt` has the necessary python packages.
+The python package can be installed via pip/git:
+```
+pip install git+https://github.com/lou-k/lightroom-cc-api.git@VERSION
+```
+where `VERSION` is a [relase tag](https://github.com/lou-k/lightroom-cc-api/releases).
 
 In addition, you'll need libmagic. Install via:
 * OSX: `brew install libmagic`
