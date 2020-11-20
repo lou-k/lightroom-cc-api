@@ -7,7 +7,6 @@ import socket
 import uuid
 
 import requests
-from requests import HTTPError
 
 
 class LightRoomApi:
@@ -195,7 +194,7 @@ class LightRoomApi:
         revision_id = self.__get_uuid()
 
         # timestamp this
-        import_timestamp = datetime.datetime.today().isoformat() + 'Z'
+        import_timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
 
         # create the revision
         self.put_revision(
@@ -225,26 +224,34 @@ class LightRoomApi:
         Uploads an image file to lightroom.
         Based on https://github.com/AdobeDocs/lightroom-partner-apis/blob/master/samples/adobe-auth-node/server/lr.js#L55
         """
+        # Create a new revision
+        asset_id, revision_id = self.create_new_revision_from_file(
+            catalog_id, file_path)
+
+        # Figure out the kind of file it is..
+        content_type = self.__get_mime_type__(file_path)
+
+        # Upload the original
+        with open(file_path, 'rb') as f:
+            self.put_master(catalog_id, asset_id,
+                            revision_id, f, content_type)
+
+        # return the asset and revision ids
+        return asset_id
+
+    def upload_image_file_if_not_exists(self, catalog_id, file_path):
         sha256 = self.__get_shah_of_file__(file_path)
 
-        try:
-            # Create a new revision
-            asset_id, revision_id = self.create_new_revision_from_file(
-                catalog_id, file_path, sha256)
+        # lookup existing versions.
+        # Note that we could just post it with the `If-None-Match`, but that only works
+        # if the subtypes match.
+        # This causes a problem when the image was deleted from lightroom: it's subtype becomes
+        # 'deleted_image'.
+        # By checking existing first, we can see if the file was already uploaded and deleted.
+        existing = self.assets(catalog_id, sha256=sha256)['resources']
 
-            # Figure out the kind of file it is..
-            content_type = self.__get_mime_type__(file_path)
-
-            # Upload the original
-            with open(file_path, 'rb') as f:
-                print(s'Uploading. {file_path} to {asset_id} with content type $')
-                self.put_master(catalog_id, asset_id,
-                                revision_id, f, content_type)
-
-            # return the asset and revision ids
-            return asset_id
-
-        except HTTPError as e:
-            status_code = e.response.status_code
-            if status_code == 412:  # indicates that this file was already uploaded
-                return self.assets(catalog_id, sha256=sha256)['resources'][0]['id']
+        if len(existing) > 0:
+            return existing[0]
+        else:
+            asset_id = self.upload_image_file(catalog_id, file_path)
+            return self.asset(catalog_id, asset_id)
