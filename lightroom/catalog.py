@@ -145,7 +145,7 @@ class Catalog:
         existing = self.assets(sha256=sha256)['resources']
 
         if len(existing) > 0:
-            return existing[0]
+            return existing[0], True
         else:
             asset_id = self.upload_image_file(file_path)
-            return self.asset(asset_id)
+            return self.asset(asset_id), False
