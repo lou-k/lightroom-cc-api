@@ -1,6 +1,7 @@
 
 import hashlib
 import json
+import magic
 
 import requests
 
@@ -49,8 +50,10 @@ class Lightroom:
         return readable_hash
 
     def __get_mime_type__(self, file_path):
-        import magic
-        mime = magic.from_file(file_path, mime=True)
+        return magic.from_file(file_path, mime=True)
+
+    def __get_mime_type_mapped__(self, file_path):
+        mime = self.__get_mime_type__(file_path)
 
         # Note: on most versions of libmagic, RAW files are incorrectly considered tiffs...
         if mime == 'image/tiff':

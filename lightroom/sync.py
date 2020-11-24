@@ -28,19 +28,13 @@ def get_key_and_token(args):
         if not key:
             key = from_config.get('api_key')
         if not token:
-            token = from_config.get('token')
+            token = from_config.get('access_token')
     return key, token
 
 
 def is_accepted_type(lr, path):
     content_type = lr.__get_mime_type__(path)
-    if content_type.startswith('image'):
-        return True
-    elif content_type == 'application/octet-stream':
-        return True
-    else:
-        # TODO: add support for video
-        return False
+    return content_type.startswith('image') or content_type.startswith('video')
 
 
 def sync():
@@ -85,7 +79,7 @@ def sync():
         if not is_accepted_type(lr, file):
             logging.warn(f'File {file} is not an image. Skipping..')
         else:
-            asset, existed = catalog.upload_image_file_if_not_exists(file)
+            asset, existed = catalog.upload_media_file_if_not_exists(file)
             asset_id = asset['id']
             if existed:
                 logging.info(f'{file} already existed with id {asset_id}')

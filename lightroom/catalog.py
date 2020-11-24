@@ -84,7 +84,7 @@ class Catalog:
     # higher level helpers
     #
 
-    def create_new_revision_from_file(self, file_path, sha256=None):
+    def create_new_revision_from_file(self, file_path, content_type, sha256=None):
 
         # Create the asset and reivison id
         asset_id = self.__get_uuid()
@@ -93,12 +93,17 @@ class Catalog:
         # timestamp this
         import_timestamp = datetime.datetime.utcnow().isoformat() + 'Z'
 
+        # figure out the subtype
+        subtype = 'image'
+        if content_type.startswith('video'):
+            subtype = 'video'
+
         # create the revision
         self.put_revision(
             asset_id,
             revision_id,
             body={
-                'subtype': 'image',
+                'subtype': subtype,
                 'payload': {
                     'captureDate': '0000-00-00T00:00:00',  # Do I neex exif data here?
                     'userCreated': import_timestamp,
@@ -115,16 +120,18 @@ class Catalog:
 
         return (asset_id, revision_id)
 
-    def upload_image_file(self, file_path):
+    def upload_media_file(self, file_path):
         """
         Uploads an image file to lightroom.
         Based on https://github.com/AdobeDocs/lightroom-partner-apis/blob/master/samples/adobe-auth-node/server/lr.js#L55
         """
-        # Create a new revision
-        asset_id, revision_id = self.create_new_revision_from_file(file_path)
 
         # Figure out the kind of file it is..
-        content_type = self.lr.__get_mime_type__(file_path)
+        content_type = self.lr.__get_mime_type_mapped__(file_path)
+
+        # Create a new revision
+        asset_id, revision_id = self.create_new_revision_from_file(
+            file_path, content_type)
 
         # Upload the original
         with open(file_path, 'rb') as f:
@@ -133,7 +140,7 @@ class Catalog:
         # return the asset and revision ids
         return asset_id
 
-    def upload_image_file_if_not_exists(self, file_path):
+    def upload_media_file_if_not_exists(self, file_path):
         sha256 = self.lr.__get_shah_of_file__(file_path)
 
         # lookup existing versions.
@@ -147,5 +154,5 @@ class Catalog:
         if len(existing) > 0:
             return existing[0], True
         else:
-            asset_id = self.upload_image_file(file_path)
+            asset_id = self.upload_media_file(file_path)
             return self.asset(asset_id), False
