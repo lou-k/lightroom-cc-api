@@ -14,9 +14,15 @@ class Lightroom:
     See https://www.adobe.io/apis/creativecloud/lightroom/apidocs.html
     """
 
-    def __init__(self, api_key, token, base='https://lr.adobe.io/v2/'):
-        self.api_key = api_key
-        self.token = token
+    def __init__(self, api_key, token, base='https://lr.adobe.io/v2/', session = None):
+        if session is None:
+            self.session = requests.Session()
+        else:
+            self.session = session
+        self.session.headers.update({
+            'X-API-Key': api_key,
+            'Authorization': 'Bearer ' + token
+        })
         self.base = base
 
     #
@@ -31,12 +37,6 @@ class Lightroom:
             return {}
         else:
             return json.loads(result)
-
-    def __authed_headers__(self):
-        return {
-            'X-API-Key': self.api_key,
-            'Authorization': 'Bearer ' + self.token
-        }
 
     def __json_header__(self):
         return {
@@ -65,20 +65,10 @@ class Lightroom:
     #
 
     def _get(self, path, params=None, **kwargs):
-        headers = {
-            **kwargs.pop('headers', {}),
-            **self.__authed_headers__()
-        }
-        kwargs['headers'] = headers
-        return self.__process_response__(requests.get(url=self.base + path, params=params, **kwargs))
+        return self.__process_response__(self.session.get(url=self.base + path, params=params, **kwargs))
 
     def _put(self, path, data=None, **kwargs):
-        headers = {
-            **kwargs.pop('headers', {}),
-            **self.__authed_headers__()
-        }
-        kwargs['headers'] = headers
-        return self.__process_response__(requests.put(url=self.base + path, data=data, **kwargs))
+        return self.__process_response__(self.session.put(url=self.base + path, data=data, **kwargs))
 
     #
     # Health
