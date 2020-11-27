@@ -112,7 +112,7 @@ class Catalog:
                         'fileName': ntpath.basename(file_path),
                         'importTimestamp': import_timestamp,
                         'importedOnDevice': socket.gethostname(),
-                        'importedBy': self.lr.api_key,
+                        'importedBy': self.lr.session.headers['X-API-Key'],
                     }
                 }
             },
