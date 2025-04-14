@@ -1,0 +1,16 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+requests = ">=2.22.0"
+python-magic = ">=0.4.18"
+tqdm = ">=4.47.0"
+
+[dev-packages]
+ipython = "*"
+
+[requires]
+python_version = "3.12"
+python_full_version = "3.12.3"
