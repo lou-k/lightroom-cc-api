@@ -6,12 +6,23 @@ This project is new and needs a lot of work. Use with caution..
 See the [issues](https://github.com/lou-k/lightroom-cc-api/issues) page for some low hanging fruit if you have time to contribute :D.
 
 ## Pre-Requisities
-You'll need two things:
 
-* A lightroom integration api key
-* A token for your user.
+You'll need to create an application on https://developer.adobe.com/console/ with permissions to access the Lightroom Services. 
 
-See the Lightroom's [getting started](https://www.adobe.io/apis/creativecloud/lightroom/docs.html#!quickstart/integration.md) walks you through this, but it's not very inutitive.. [issue #2](https://github.com/lou-k/lightroom-cc-api/issues/2) should add more documentation here.
+Next, you'll need to generate a token using https://github.com/lou-k/adobe-io-auth. This is included as a dependency.
+
+Quickstart:
+* Go to the "OAuth Web" page of your app and set the redirect URI to `https://localhost:8443`.
+* Download your setup config for your created application.
+* Create certs for ssl:
+```
+$ openssl req -x509 -newkey rsa:4096 -nodes -out cert.pem -keyout key.pem -days 365
+```
+* Run the server:
+```
+adobe-io-server -c <your_downloaded_file.json> -s openid,offline_access,lr_partner_apis -p 8443 -o token.json
+```
+* Go to the url and authenticate..
 
 ## Installation
 
